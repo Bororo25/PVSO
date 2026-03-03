@@ -1,7 +1,7 @@
 import os
-
 from ximea import xiapi
 import cv2
+import numpy as np
 ### runn this command first echo 0|sudo tee /sys/module/usbcore/parameters/usbfs_memory_mb  ###
 
 OUT_DIR = "dataset"
@@ -37,9 +37,9 @@ try:
     while True:
         cam.get_image(img)
         image = img.get_image_data_numpy()
-        preview = cv2.resize(image,(240,240))
+        preview = cv2.resize(image,(240,240),interpolation=cv2.INTER_AREA)
 
-        cv2.imshow("test", image)
+        cv2.imshow("test", preview)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
@@ -77,7 +77,6 @@ try:
 
 # stop data acquisition
 finally:
-
     print('Stopping acquisition...')
     cam.stop_acquisition()
     # stop communication
