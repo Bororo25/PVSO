@@ -14,7 +14,7 @@ objp[:, :2] = np.mgrid[0:7, 0:5].T.reshape(-1, 2)
 objpoints = []  # 3d point in real world space
 imgpoints = []  # 2d points in image plane.
 
-images = glob.glob('dataset3/*.png')
+images = glob.glob('dataset5/*.png')
 
 #cv2.namedWindow("img", cv2.WINDOW_NORMAL)
 #cv2.moveWindow("img", 200, 100)
@@ -53,11 +53,11 @@ h, w = img.shape[:2]
 newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
 dst = cv.undistort(img, mtx, dist, None, newcameramtx)
 
-#x, y, w, h = roi
-#dst = dst[y:y+h, x:x+w]
+x, y, w, h = roi
+dst = dst[y:y+h, x:x+w]
 
-#ok = cv.imwrite("calibresult.png", dst)
-#print("Uložené:", ok)
+ok = cv.imwrite("calibresult.png", dst)
+print("Uložené:", ok)
 
 mean_error = 0
 for i in range(len(objpoints)):

@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 ### runn this command first echo 0|sudo tee /sys/module/usbcore/parameters/usbfs_memory_mb  ###
 
-OUT_DIR = "dataset"
+OUT_DIR = "dataset5"
 os.makedirs(OUT_DIR, exist_ok=True)
 counter = 0
 
@@ -19,7 +19,7 @@ print('Opening first camera...')
 cam.open_device()
 
 # settings
-cam.set_exposure(50000)
+cam.set_exposure(200000)
 cam.set_param("imgdataformat","XI_RGB32")
 cam.set_param("auto_wb",1)
 
