@@ -14,11 +14,11 @@ objp[:, :2] = np.mgrid[0:7, 0:5].T.reshape(-1, 2)
 objpoints = []  # 3d point in real world space
 imgpoints = []  # 2d points in image plane.
 
-images = glob.glob('dataset/*.png')
+images = glob.glob('dataset3/*.png')
 
-cv2.namedWindow("img", cv2.WINDOW_NORMAL)
-cv2.moveWindow("img", 200, 100)
-cv2.resizeWindow("img", 900, 700)  # šírka, výška okna v pixeloch
+#cv2.namedWindow("img", cv2.WINDOW_NORMAL)
+#cv2.moveWindow("img", 200, 100)
+#cv2.resizeWindow("img", 900, 700)  # šírka, výška okna v pixeloch
 
 for fname in images:
     img = cv.imread(fname)
@@ -36,11 +36,9 @@ for fname in images:
 
         # Draw and display the corners
         cv.drawChessboardCorners(img, (7, 5), corners2, ret)
-        for p in corners2:
-            x, y = int(p[0][0]), int(p[0][1])
-            cv.circle(img, (x, y), 6, (0, 255, 0), 2)  # polomer 6, hrúbka 2
+
         cv.imshow('img', cv2.resize(img,(800,800),interpolation=cv2.INTER_AREA))
-        cv.waitKey(3000)
+        cv.waitKey(500)
 
 cv.destroyAllWindows()
 
@@ -55,11 +53,24 @@ h, w = img.shape[:2]
 newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
 dst = cv.undistort(img, mtx, dist, None, newcameramtx)
 
-show_w, show_h = 480, 480
-cv.imshow("original", cv.resize(img, (show_w, show_h)))
-cv.imshow("undistorted", cv.resize(dst, (show_w, show_h)))
-cv.waitKey(0)
-cv.destroyAllWindows()
+#x, y, w, h = roi
+#dst = dst[y:y+h, x:x+w]
+
+#ok = cv.imwrite("calibresult.png", dst)
+#print("Uložené:", ok)
+
+mean_error = 0
+for i in range(len(objpoints)):
+    imgpoints2, _ = cv.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+    error = cv.norm(imgpoints[i], imgpoints2, cv.NORM_L2) / len(imgpoints2)
+    mean_error += error
+print("total error: {}".format(mean_error / len(objpoints)))
+
+#show_w, show_h = 480, 480
+#cv.imshow("original", cv.resize(img, (show_w, show_h)))
+#cv.imshow("undistorted", cv.resize(dst, (show_w, show_h)))
+#cv.waitKey(0)
+#cv.destroyAllWindows()
 
 np.savez("calibration.npz", K=mtx, dist=dist)
 print("Saved to calibration.npz")
