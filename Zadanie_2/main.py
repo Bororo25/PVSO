@@ -4,7 +4,7 @@ import cv2 as cv
 data = np.load("calibration.npz")
 K = data["K"]
 dist = data["dist"]
-img = cv.imread("dataset/0001.png")
+img = cv.imread("dataset5/0023.png")
 
 h, w = img.shape[:2]
 newK, roi = cv.getOptimalNewCameraMatrix(K, dist, (w, h), 0, (w, h))  # alpha=0 = menej čiernych okrajov
