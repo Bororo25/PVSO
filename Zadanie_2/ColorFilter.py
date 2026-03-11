@@ -1,98 +1,62 @@
-import cv2 as cv
+import os
+from operator import truediv
+
 import numpy as np
+from ximea import xiapi
+import cv2 as cv
 
-# -----------------------------
-# 1. Nacitanie kalibracie
-# -----------------------------
-calib = np.load("calibration.npz")
-cameraMatrix = calib["K"]
-distCoeffs = calib["dist"]
+data = np.load("calibration.npz")
+K = data["K"]
+dist = data["dist"]
 
-# -----------------------------
-# 2. Kamera
-# -----------------------------
-cap = cv.VideoCapture(0)
+cam = xiapi.Camera()
 
-if not cap.isOpened():
-    print("Kamera sa nepodarila otvorit.")
-    exit()
+print('Opening first camera...')
+cam.open_device()
+cam.set_exposure(100000)
+cam.set_param("imgdataformat","XI_RGB32")
+cam.set_param("auto_wb",1)
 
-# Nastavenie rozlisenia pre plynulejsi real-time beh
-cap.set(cv.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
+print('Exposure was set to %i us' %cam.get_exposure())
+img = xiapi.Image()
 
-# Zistime realnu velkost frame pre optimalizaciu undistortion
-ret, frame = cap.read()
-if not ret:
-    print("Nepodarilo sa nacitat prvy frame.")
-    cap.release()
-    exit()
+print('Starting data acquisition...')
+cam.start_acquisition()
 
-h, w = frame.shape[:2]
+try:
+    while True:
+        cam.get_image(img)
+        image = img.get_image_data_numpy()
+        preview = cv.resize(image,(500,500),interpolation=cv.INTER_AREA)
+        h, w = preview.shape[:2]
+        newK, roi = cv.getOptimalNewCameraMatrix(K, dist, (w, h), 0, (w, h))  # alpha=0 = menej čiernych okrajov
+        preview = cv.undistort(preview, K, dist, None, newK)
 
-# Nova optimalna kamera
-newCameraMatrix, roi = cv.getOptimalNewCameraMatrix(
-    cameraMatrix, distCoeffs, (w, h), 1, (w, h)
-)
+        #print(preview.shape)
 
-# -----------------------------
-# 3. Spracovanie v cykle
-# -----------------------------
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Nepodarilo sa nacitat frame.")
-        break
+        hsv = cv.cvtColor(preview, cv.COLOR_BGR2HSV)
 
-    # ---------------------------------
-    # A) Odstranenie skreslenia obrazu
-    # ---------------------------------
-    undistorted = cv.undistort(frame, cameraMatrix, distCoeffs, None, newCameraMatrix)
 
-    # Ak chces, mozes obraz orezat na validnu oblast
-    x, y, w_roi, h_roi = roi
-    if w_roi > 0 and h_roi > 0:
-        undistorted_cropped = undistorted[y:y+h_roi, x:x+w_roi]
-    else:
-        undistorted_cropped = undistorted
+        lower = np.array([0, 100, 75], dtype=np.uint8)
+        upper = np.array([7, 255, 255], dtype=np.uint8)
 
-    # ---------------------------------
-    # B) Farebny filter v HSV
-    #    priklad: cervena -> zelena
-    # ---------------------------------
-    hsv = cv.cvtColor(undistorted_cropped, cv.COLOR_BGR2HSV)
+        mask = cv.inRange(hsv, lower, upper)
 
-    # Cervena je v HSV rozdelena na 2 intervaly
-    lower_red1 = np.array([0, 100, 80])
-    upper_red1 = np.array([10, 255, 255])
 
-    lower_red2 = np.array([170, 100, 80])
-    upper_red2 = np.array([179, 255, 255])
+        img_filtered = preview[:, :, :3].copy()
+        img_filtered[mask == 255] = (0, 200, 255)
+        cv.imshow("img_filtered", img_filtered)
 
-    mask1 = cv.inRange(hsv, lower_red1, upper_red1)
-    mask2 = cv.inRange(hsv, lower_red2, upper_red2)
-    mask = cv.bitwise_or(mask1, mask2)
+        key = cv.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
+finally:
+    print('Stopping acquisition...')
+    cam.stop_acquisition()
+    # stop communication
+    cam.close_device()
+    cv.destroyAllWindows()
+    print('Done.')
 
-    # Vyhladenie/ocistenie masky
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel)
-    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
 
-    # Nahradenie cervenej farby zelenou
-    output = undistorted_cropped.copy()
-    output[mask > 0] = [0, 255, 0]   # BGR zelena
 
-    # ---------------------------------
-    # C) Zobrazenie
-    # ---------------------------------
-    cv.imshow("Original", frame)
-    cv.imshow("Undistorted", undistorted_cropped)
-    cv.imshow("Mask", mask)
-    cv.imshow("Color Filter", output)
-
-    key = cv.waitKey(1) & 0xFF
-    if key == 27:   # ESC
-        break
-
-cap.release()
-cv.destroyAllWindows()
