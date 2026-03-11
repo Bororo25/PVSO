@@ -50,6 +50,16 @@ try:
         key = cv.waitKey(1) & 0xFF
         if key == ord("q"):
             break
+        if key == ord("s"):
+            filename = os.path.basename("filtrovany2.png")
+            ok1 = cv.imwrite(filename, img_filtered)
+            filename = os.path.basename("povodny2.png")
+            ok2 = cv.imwrite(filename, preview)
+
+            if ok1 and ok2:
+                print(f"Uložené: {filename}")
+            else:
+                print("Ukladanie zlyhalo!")
 finally:
     print('Stopping acquisition...')
     cam.stop_acquisition()
