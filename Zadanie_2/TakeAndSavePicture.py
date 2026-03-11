@@ -18,6 +18,7 @@ cam = xiapi.Camera()
 print('Opening first camera...')
 cam.open_device()
 
+
 # settings
 cam.set_exposure(200000)
 cam.set_param("imgdataformat","XI_RGB32")
