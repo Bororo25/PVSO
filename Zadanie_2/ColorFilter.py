@@ -29,7 +29,7 @@ try:
         image = img.get_image_data_numpy()
         preview = cv.resize(image,(500,500),interpolation=cv.INTER_AREA)
         h, w = preview.shape[:2]
-        newK, roi = cv.getOptimalNewCameraMatrix(K, dist, (w, h), 0, (w, h))  # alpha=0 = menej čiernych okrajov
+        newK, roi = cv.getOptimalNewCameraMatrix(K, dist, (w, h), 0, (w, h))
         preview = cv.undistort(preview, K, dist, None, newK)
 
         #print(preview.shape)
@@ -45,6 +45,7 @@ try:
 
         img_filtered = preview[:, :, :3].copy()
         img_filtered[mask == 255] = (0, 200, 255)
+
         cv.imshow("img_filtered", img_filtered)
 
         key = cv.waitKey(1) & 0xFF
