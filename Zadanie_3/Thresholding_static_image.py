@@ -1,6 +1,18 @@
 import numpy
 import cv2
 
+def histogram(img):
+    hist = []
+    for i in range(0,255):
+        hist.append(0)
+
+    for i in range(img.shape[0]):
+        for j in range(img1.shape[1]):
+            #hist[img[i][j]] += 1
+            print(img[i][j])
+    return hist
+
+
 img1 = cv2.imread("Castle.png")
 img2 = cv2.imread("Car.png")
 
@@ -35,8 +47,10 @@ for i in range(img2.shape[0]):
         else:
             img2[i][j]=0
 
-cv2.imshow("Castle",img1)
+#cv2.imshow("Castle",img1)
 cv2.imshow("Car",img2)
+hist = histogram(img2)
+print(hist)
 
 
 
