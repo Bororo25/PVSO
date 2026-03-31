@@ -2,9 +2,7 @@ from ximea import xiapi
 import cv2
 import numpy as np
 
-# -------------------------------------------------
 # Nastavenia
-# -------------------------------------------------
 
 EXPOSURE_US = 100000
 ROI_RATIO = 1
@@ -13,10 +11,8 @@ MIN_AREA = 8000
 BORDER_MARGIN = 12
 APPROX_EPS = 0.04
 
-# -------------------------------------------------
-# Pomocné funkcie
-# -------------------------------------------------
 
+# Pomocné funkcie
 def touches_border(contour, width, height, margin=BORDER_MARGIN):
     x, y, w, h = cv2.boundingRect(contour)
 
@@ -61,7 +57,7 @@ def classify_and_draw_shape(cnt, output):
     area = cv2.contourArea(cnt)
     if area < MIN_AREA:
         return
-
+    #obvod
     perimeter = cv2.arcLength(cnt, True)
     if perimeter == 0:
         return
@@ -72,7 +68,7 @@ def classify_and_draw_shape(cnt, output):
     x, y, w, h = cv2.boundingRect(hull)
     if h == 0:
         return
-
+    #pomer
     aspect_ratio = w / float(h)
     circularity = 4 * np.pi * area / (perimeter * perimeter + 1e-6)
 
@@ -82,9 +78,9 @@ def classify_and_draw_shape(cnt, output):
 
     cx, cy = center
 
-    # -----------------------------
+
     # 1. Trojuholnik
-    # -----------------------------
+
     if len(approx) == 3:
         cv2.drawContours(output, [approx], -1, (0, 255, 0), 3)
         cv2.circle(output, (cx, cy), 6, (0, 0, 255), -1)
@@ -99,9 +95,8 @@ def classify_and_draw_shape(cnt, output):
         )
         return
 
-    # -----------------------------
+
     # 2. Stvorec / Obdlznik
-    # -----------------------------
     if len(approx) == 4:
         rect = cv2.minAreaRect(hull)
         rw, rh = rect[1]
@@ -130,9 +125,7 @@ def classify_and_draw_shape(cnt, output):
         )
         return
 
-    # -----------------------------
-    # 3. Kruh cez ellipse fitting
-    # -----------------------------
+    # 3. Kruh
     if len(approx) > 4 and circularity > 0.78 and 0.75 <= aspect_ratio <= 1.25 and len(cnt) >= 5:
         ellipse = cv2.fitEllipse(cnt)
 
@@ -194,7 +187,7 @@ print("  - = zniz SAT threshold")
 
 show_mask = True
 sat_threshold = SAT_THRESHOLD
-
+exposure_us = EXPOSURE_US
 try:
     while True:
         cam.get_image(img)
@@ -224,7 +217,15 @@ try:
             (0, 0, 255),
             2
         )
-
+        cv2.putText(
+            output,
+            f"Exposure: {exposure_us} us",
+            (20, 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (0, 0, 255),
+            2
+        )
         preview = cv2.resize(output, (1000, 700), interpolation=cv2.INTER_AREA)
         cv2.imshow("Live detekcia tvarov", preview)
 
@@ -246,6 +247,16 @@ try:
         elif key == ord('-'):
             sat_threshold = max(0, sat_threshold - 2)
             print(f"SAT threshold: {sat_threshold}")
+        elif key == ord('i'):
+            exposure_us = min(1000000, exposure_us + 5000)
+            cam.set_exposure(exposure_us)
+            print(f"Exposure: {exposure_us} us")
+
+        elif key == ord('k'):
+            exposure_us = max(1000, exposure_us - 5000)
+            cam.set_exposure(exposure_us)
+            print(f"Exposure: {exposure_us} us")
+
 
 finally:
     print("Stopping acquisition...")
