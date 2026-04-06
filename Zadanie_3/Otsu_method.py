@@ -1,39 +1,116 @@
-import numpy
+import numpy as np
 import cv2
+import matplotlib.pyplot as plt
+
 
 def histogram(img):
-    hist = []
-    for i in range(0,256):
-        hist.append(0)
+    hist = [0] * 256
 
     for i in range(img.shape[0]):
-        for j in range(img1.shape[1]):
-            hist[img[i][j]] += 1
+        for j in range(img.shape[1]):
+            hist[img[i, j]] += 1
+
     return hist
 
 
-img1 = cv2.imread("Castle.png")
-img2 = cv2.imread("Car.png")
+def otsu_threshold(img):
+    hist = histogram(img)
+    total = img.shape[0] * img.shape[1]
+
+    best_t = 0
+    max_sigma = 0
+
+    for t in range(256):
+
+        omega0 = 0
+        omega1 = 0
+
+        for i in range(t+1):
+            omega0 += hist[i] / total
+        for i in range(t+1, 256):
+            omega1 += hist[i] / total
+
+        if omega0 == 0 or omega1 == 0:
+            continue
+
+        mi0_upper = 0
+        mi1_upper = 0
+
+        for i in range(t+1):
+            mi0_upper += i * hist[i] / total
+        mi0 = mi0_upper / omega0
+
+        for i in range(t+1,256):
+            mi1_upper += i * hist[i] / total
+        mi1 = mi1_upper / omega1
+
+        sigma2 = omega0 * omega1 * (mi0 - mi1) ** 2
+
+        if sigma2 > max_sigma:
+            max_sigma = sigma2
+            best_t = t
+
+    return best_t
+
+
+def apply_threshold(img, threshold):
+    out = np.zeros_like(img)
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i, j] > threshold:
+                out[i, j] = 255
+            else:
+                out[i, j] = 0
+
+    return out
+
+
+img1 = cv2.imread("Car.png")
 
 if img1 is None:
-    print('The image 1 is empty')
-if img2 is None:
-    print('The image 2 is empty')
+    print("The image 1 is empty")
 
+img1 = cv2.resize(img1, (1000, 600), interpolation=cv2.INTER_AREA)
 
-img1 = cv2.resize(img1,(1000,600),interpolation=cv2.INTER_AREA)
-img2 = cv2.resize(img2,(1000,600),interpolation=cv2.INTER_AREA)
 img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+# histogram
+# hist = histogram(img1)
+# print("Histogram:")
+# print(hist)
+
+# Otsu threshold
+t = otsu_threshold(img1)
+print("Otsu threshold:", t)
+
+# binárny obraz
+binary = apply_threshold(img1, t)
+
+cv2.imshow("Original", img1)
+cv2.imwrite("Otsu-Car-gray.png", img1)
+cv2.imshow("Otsu Binary", binary)
+cv2.imwrite("Otsu-Car-treshold.png", binary)
+
+t1, binary = cv2.threshold(img1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+print("Otsu threshold OpenCV:", t1)
+cv2.imshow("Otsu Binary OpenCV", binary)
+cv2.imwrite("Otsu-Car-threshold-OpenCV.png", binary)
 
 
+hist = cv2.calcHist([img1], [0], None, [256], [0, 256])
 
-#cv2.imshow("Castle",img1)
-cv2.imshow("Car",img2)
-hist = histogram(img2)
-print(hist)
+plt.bar(range(256), hist.flatten())
+plt.axvline(x=t, color="red", linestyle="--", label=f"Otsu threshold = {int(t)}")
+plt.title("Histogram obrazu")
+plt.xlabel("Intenzita jasu")
+plt.ylabel("Pocet pixelov")
+plt.xlim([0, 256])
+plt.savefig("histogram_Car.png", dpi=300, bbox_inches="tight")
+plt.show()
 
-
+# combined = np.vstack((img1, binary))
+# cv2.imshow("Combined", combined)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
