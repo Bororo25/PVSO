@@ -14,7 +14,7 @@ import time
 #     return hist
 
 
-img = cv2.imread("Car.png")
+img = cv2.imread("Castle.png")
 # img2 = cv2.imread("Car.png")
 
 if img is None:
