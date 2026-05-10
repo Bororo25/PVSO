@@ -16,12 +16,12 @@ venv/
 env/
 
 # Training / reconstruction outputs
-output/**
-!output/.gitkeep
+#output/**
+#!output/.gitkeep
 
 # Local datasets (keep directory optional via .gitkeep)
-data/**
-!data/.gitkeep
+#data/**
+#!data/.gitkeep
 
 # Point clouds / media exports
 *.ply
